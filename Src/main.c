@@ -53,7 +53,7 @@
 
 /* USER CODE BEGIN Includes */
 #include "lwip/apps/httpd.h"
-#include "http_cgi_ssi.h"
+#include "http_server.h"
 
 /* USER CODE END Includes */
 
@@ -76,6 +76,14 @@ static void MX_GPIO_Init(void);
 /* USER CODE BEGIN 0 */
 int index1, numparam;
 char mass1[20], mass2[20];
+
+
+#define LWIP_DEBUG 1
+
+int fputc(int c, FILE *stream)
+{
+ return ITM_SendChar(c);
+}
 
 /* USER CODE END 0 */
 

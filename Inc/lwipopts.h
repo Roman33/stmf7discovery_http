@@ -83,20 +83,30 @@
 #define SYS_LIGHTWEIGHT_PROT 0
 /*----- Value in opt.h for MEM_ALIGNMENT: 1 -----*/
 #define MEM_ALIGNMENT 4
+/*----- Default Value for MEM_SIZE: 1600 ---*/
+#define MEM_SIZE 3000
 /*----- Default Value for MEMP_NUM_TCP_SEG: 16 ---*/
 #define MEMP_NUM_TCP_SEG 24
+/*----- Default Value for PBUF_POOL_BUFSIZE: 592 ---*/
+#define PBUF_POOL_BUFSIZE 2000
 /*----- Value in opt.h for LWIP_ETHERNET: LWIP_ARP || PPPOE_SUPPORT -*/
 #define LWIP_ETHERNET 1
 /*----- Value in opt.h for LWIP_DNS_SECURE: (LWIP_DNS_SECURE_RAND_XID | LWIP_DNS_SECURE_NO_MULTIPLE_OUTSTANDING | LWIP_DNS_SECURE_RAND_SRC_PORT) -*/
 #define LWIP_DNS_SECURE 7
+/*----- Default Value for TCP_WND: 2144 ---*/
+#define TCP_WND 4000
+/*----- Default Value for TCP_MSS: 536 ---*/
+#define TCP_MSS 1000
+/*----- Default Value for TCP_SND_BUF: 1072 ---*/
+#define TCP_SND_BUF 2000
 /*----- Value in opt.h for TCP_SND_QUEUELEN: (4*TCP_SND_BUF + (TCP_MSS - 1))/TCP_MSS -----*/
 #define TCP_SND_QUEUELEN 9
-/*----- Value in opt.h for TCP_SNDLOWAT: LWIP_MIN(LWIP_MAX(((TCP_SND_BUF)/2), (2 * TCP_MSS) + 1), (TCP_SND_BUF) - 1) -*/
-#define TCP_SNDLOWAT 1071
+/*----- Default Value for TCP_SNDLOWAT: 1071 ---*/
+#define TCP_SNDLOWAT 1999
 /*----- Value in opt.h for TCP_SNDQUEUELOWAT: LWIP_MAX(TCP_SND_QUEUELEN)/2, 5) -*/
 #define TCP_SNDQUEUELOWAT 5
-/*----- Value in opt.h for TCP_WND_UPDATE_THRESHOLD: LWIP_MIN(TCP_WND/4, TCP_MSS*4) -----*/
-#define TCP_WND_UPDATE_THRESHOLD 536
+/*----- Default Value for TCP_WND_UPDATE_THRESHOLD: 536 ---*/
+#define TCP_WND_UPDATE_THRESHOLD 1000
 /*----- Value in opt.h for LWIP_NETCONN: 1 -----*/
 #define LWIP_NETCONN 0
 /*----- Value in opt.h for LWIP_SOCKET: 1 -----*/
@@ -105,6 +115,16 @@
 #define RECV_BUFSIZE_DEFAULT 2000000000
 /*----- Default Value for LWIP_HTTPD: 0 ---*/
 #define LWIP_HTTPD 1
+/*----- Default Value for LWIP_HTTPD_CGI: 0 ---*/
+#define LWIP_HTTPD_CGI 1
+/*----- Default Value for LWIP_HTTPD_SSI: 0 ---*/
+#define LWIP_HTTPD_SSI 1
+/*----- Default Value for LWIP_HTTPD_SUPPORT_POST: 0 ---*/
+#define LWIP_HTTPD_SUPPORT_POST 1
+/*----- Default Value for LWIP_HTTPD_SUPPORT_11_KEEPALIVE: 0 ---*/
+#define LWIP_HTTPD_SUPPORT_11_KEEPALIVE 1
+/*----- Default Value for LWIP_HTTPD_REQ_BUFSIZE: 1023 ---*/
+#define LWIP_HTTPD_REQ_BUFSIZE 2000
 /*----- Value in opt.h for LWIP_STATS: 1 -----*/
 #define LWIP_STATS 0
 /*----- Value in opt.h for CHECKSUM_GEN_IP: 1 -----*/
@@ -129,6 +149,11 @@
 #define CHECKSUM_CHECK_ICMP6 0
 /*-----------------------------------------------------------------------------*/
 /* USER CODE BEGIN 1 */
+
+#define LWIP_DEBUG 1
+//#define TCP_DEBUG  LWIP_DBG_ON
+#define HTTPD_DEBUG         LWIP_DBG_ON
+
 
 /** Set this to 1 to support CGI */
 #define LWIP_HTTPD_CGI            1

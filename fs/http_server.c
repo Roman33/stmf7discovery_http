@@ -48,7 +48,7 @@
 #include "lwip/debug.h"
 #include "lwip/tcp.h"
 #include "lwip/apps/httpd.h"
-#include "http_cgi_ssi.h"
+#include "http_server.h"
 
 
 #include <string.h>
@@ -60,6 +60,13 @@ uint32_t ADC_not_configured=1;
 extern int index1, numparam;
 extern char mass1[20], mass2[20];
 extern int i;
+
+char uri1[20];
+char http_req[20];
+int http_len;
+int content_len;
+char data[200];
+
 
 
 
@@ -95,7 +102,10 @@ u16_t ADC_Handler(int iIndex, char *pcInsert, int iInsertLen)
   if (iIndex ==0)
   {  
      /* get digits to display */
-		char a[]="hello1";
+		char mass[]=	"test data: %d\n"
+							"Test2 data: %X\n"
+							"Test3 data: %x\n";
+		
 		char c = i +0x30;
 
      /* prepare data to be inserted in html */
@@ -103,7 +113,7 @@ u16_t ADC_Handler(int iIndex, char *pcInsert, int iInsertLen)
 		//*pcInsert = c;
 		//memset(pcInsert, c, 20);
 
-		sprintf( pcInsert, "test data: %d\nTest2 data: %X \n", i,i);
+		sprintf( pcInsert, mass, i,i,i);
 
 
 		//snprintf(pcInsert, sizeof(pcInsert), "%s%s", f1, f2);
@@ -152,8 +162,83 @@ const char * LEDS_CGI_Handler(int iIndex, int iNumParams, char *pcParam[], char 
 		
   }
   /* uri to send after cgi call*/
-  return "/STM32F4x7Tx.html";  
+  return "/tx_data.html";  
 }
+
+/* These functions must be implemented by the application */
+
+/** Called when a POST request has been received. The application can decide
+ * whether to accept it or not.
+ *
+ * @param connection Unique connection identifier, valid until httpd_post_end
+ *        is called.
+ * @param uri The HTTP header URI receiving the POST request.
+ * @param http_request The raw HTTP request (the first packet, normally).
+ * @param http_request_len Size of 'http_request'.
+ * @param content_len Content-Length from HTTP header.
+ * @param response_uri Filename of response file, to be filled when denying the
+ *        request
+ * @param response_uri_len Size of the 'response_uri' buffer.
+ * @param post_auto_wnd Set this to 0 to let the callback code handle window
+ *        updates by calling 'httpd_post_data_recved' (to throttle rx speed)
+ *        default is 1 (httpd handles window updates automatically)
+ * @return ERR_OK: Accept the POST request, data may be passed in
+ *         another err_t: Deny the POST request, send back 'bad request'.
+ */
+err_t httpd_post_begin(void *connection, const char *uri, const char *http_request,
+                       u16_t http_request_len, int content_len, char *response_uri,
+                       u16_t response_uri_len, u8_t *post_auto_wnd)
+
+{
+	memcpy(&uri1, uri,20);
+	memcpy(&http_req, http_request,20);
+	http_len = http_request_len;
+	content_len = content_len;
+	
+
+	
+	return ERR_OK;
+}
+
+/** Called for each pbuf of data that has been received for a POST.
+ * ATTENTION: The application is responsible for freeing the pbufs passed in!
+ *
+ * @param connection Unique connection identifier.
+ * @param p Received data.
+ * @return ERR_OK: Data accepted.
+ *         another err_t: Data denied, http_post_get_response_uri will be called.
+ */
+err_t httpd_post_receive_data(void *connection, struct pbuf *p)
+{
+	
+	pbuf_copy_partial(p, data, 200, 0);
+	
+	pbuf_free(p);
+	return ERR_OK;
+	
+}
+
+/** Called when all data is received or when the connection is closed.
+ * The application must return the filename/URI of a file to send in response
+ * to this POST request. If the response_uri buffer is untouched, a 404
+ * response is returned.
+ *
+ * @param connection Unique connection identifier.
+ * @param response_uri Filename of response file, to be filled when denying the request
+ * @param response_uri_len Size of the 'response_uri' buffer.
+ */
+void httpd_post_finished(void *connection, char *response_uri, u16_t response_uri_len)
+{
+	char mass[] ="/post_done.html";
+	int size = sizeof(mass);
+	response_uri = mass;
+	response_uri_len = size;
+	
+}
+
+
+
+
 
 /**
   * @brief  Http webserver Init
