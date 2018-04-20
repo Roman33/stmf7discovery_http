@@ -54,18 +54,37 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "flash_if.h"
+
 tSSIHandler ADC_Page_SSI_Handler;
 uint32_t ADC_not_configured=1;
 
 extern int index1, numparam;
 extern char mass1[20], mass2[20];
-extern int i;
+
 
 char uri1[20];
 char http_req[20];
 int http_len;
-int content_len;
-char data[200];
+int size;
+uint8_t data[200];
+int j =0;
+
+
+	int EndOffset=0;
+	int DataOffset=0;
+	int TotalReceived=0;
+	int TotalData=0;
+	int packet_num = 0;
+	
+
+
+static const char http_crnl_2[4] =
+/* "\r\n--" */
+{0xd, 0xa,0x2d,0x2d};
+static const char octet_stream[14] =
+/* "octet-stream" */
+{0x6f, 0x63, 0x74, 0x65, 0x74, 0x2d, 0x73, 0x74, 0x72, 0x65, 0x61, 0x6d,0x0d, };
 
 
 
@@ -106,14 +125,14 @@ u16_t ADC_Handler(int iIndex, char *pcInsert, int iInsertLen)
 							"Test2 data: %X\n"
 							"Test3 data: %x\n";
 		
-		char c = i +0x30;
+//		char c = i +0x30;
 
-     /* prepare data to be inserted in html */
-     //*pcInsert = (char)&"hello_there";
-		//*pcInsert = c;
-		//memset(pcInsert, c, 20);
+//     /* prepare data to be inserted in html */
+//     //*pcInsert = (char)&"hello_there";
+//		//*pcInsert = c;
+//		//memset(pcInsert, c, 20);
 
-		sprintf( pcInsert, mass, i,i,i);
+//		sprintf( pcInsert, mass, i,i,i);
 
 
 		//snprintf(pcInsert, sizeof(pcInsert), "%s%s", f1, f2);
@@ -193,7 +212,12 @@ err_t httpd_post_begin(void *connection, const char *uri, const char *http_reque
 	memcpy(&uri1, uri,20);
 	memcpy(&http_req, http_request,20);
 	http_len = http_request_len;
-	content_len = content_len;
+	size = content_len;
+	
+	
+
+		printf( "content_len: %d\n", size);
+	
 	
 
 	
@@ -211,8 +235,91 @@ err_t httpd_post_begin(void *connection, const char *uri, const char *http_reque
 err_t httpd_post_receive_data(void *connection, struct pbuf *p)
 {
 	
-	pbuf_copy_partial(p, data, 200, 0);
+
+//	printf( "tot_len: %d\n", p->tot_len);
+//	printf( "len: %d\n", p->len);
+	//pbuf_copy_partial(p, data, 300, 0);
+	j++;
+	//uint8_t temp[1000];
 	
+		
+	
+	//parse for DataOffset and EndOffset if packet_num = 0
+	if ( packet_num == 0)
+	{
+			          /* parse packet for the octet-stream field */
+          for (int i=0;i < p->tot_len;i++)
+          {
+             if (strncmp ((char*)(p->payload) +i, octet_stream, 13)==0)
+             {
+               DataOffset = i+16; //16 cause of /r/n
+							 printf( "DataOffset: %d\n", DataOffset);
+               break;
+             }
+          }
+					
+					//parse for end
+						for (int i=4; i < p->tot_len; i++)
+						{
+						if (strncmp ((char*)(p->payload) + p->tot_len -i,http_crnl_2 , 4)==0)
+						{
+						EndOffset = p->len - i;
+						printf( "EndOffset: %d\n", EndOffset);
+
+						TotalData += EndOffset - DataOffset;
+						printf( "TotalData: %d\n", TotalData);
+							
+							FLASH_If_Init();
+							//FLASH_If_Erase(5);
+							pbuf_copy_partial(p, data, TotalData, DataOffset);
+							//FLASH_If_Write((uint32_t *)USER_FLASH_FIRST_PAGE_ADDRESS, (uint32_t *)data ,TotalData);
+						break;
+						}
+						}
+						
+						//more then one pack
+						if (EndOffset == 0)
+						{
+							packet_num = 1;
+							TotalData+= p->tot_len - DataOffset;
+							
+						}
+						else //end
+						{
+						packet_num = 0;
+						EndOffset=0;
+						DataOffset=0;
+						TotalData=0;
+						}
+	}
+	
+				
+				// много пакетов
+					else if ( packet_num == 1)
+					{
+						
+					TotalData+= p->tot_len;
+
+							for (int i=4; i < p->tot_len; i++)
+					{
+					if (strncmp ((char*)(p->payload) + p->tot_len -i,http_crnl_2 , 4)==0)
+					{
+					EndOffset = p->tot_len - i;
+					printf( "EndOffset: %d\n", EndOffset);
+
+					TotalData = TotalData - p->tot_len + EndOffset;
+					printf( "TotalData: %d\n", TotalData);
+						
+					packet_num = 0;
+					EndOffset=0;
+					DataOffset=0;
+					TotalData=0;
+					break;
+					}
+					}
+					}
+					
+					
 	pbuf_free(p);
 	return ERR_OK;
 	
@@ -229,10 +336,14 @@ err_t httpd_post_receive_data(void *connection, struct pbuf *p)
  */
 void httpd_post_finished(void *connection, char *response_uri, u16_t response_uri_len)
 {
-	char mass[] ="/post_done.html";
-	int size = sizeof(mass);
-	response_uri = mass;
-	response_uri_len = size;
+	char mass[] ="/post_done.shtml";
+	
+	response_uri_len = sizeof(mass);
+	
+	    
+        strncpy(response_uri, mass, response_uri_len);
+
+
 	
 }
 

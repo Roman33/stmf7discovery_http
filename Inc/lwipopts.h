@@ -93,20 +93,12 @@
 #define LWIP_ETHERNET 1
 /*----- Value in opt.h for LWIP_DNS_SECURE: (LWIP_DNS_SECURE_RAND_XID | LWIP_DNS_SECURE_NO_MULTIPLE_OUTSTANDING | LWIP_DNS_SECURE_RAND_SRC_PORT) -*/
 #define LWIP_DNS_SECURE 7
-/*----- Default Value for TCP_WND: 2144 ---*/
-#define TCP_WND 4000
 /*----- Default Value for TCP_MSS: 536 ---*/
 #define TCP_MSS 1000
-/*----- Default Value for TCP_SND_BUF: 1072 ---*/
-#define TCP_SND_BUF 2000
 /*----- Value in opt.h for TCP_SND_QUEUELEN: (4*TCP_SND_BUF + (TCP_MSS - 1))/TCP_MSS -----*/
 #define TCP_SND_QUEUELEN 9
-/*----- Default Value for TCP_SNDLOWAT: 1071 ---*/
-#define TCP_SNDLOWAT 1999
 /*----- Value in opt.h for TCP_SNDQUEUELOWAT: LWIP_MAX(TCP_SND_QUEUELEN)/2, 5) -*/
 #define TCP_SNDQUEUELOWAT 5
-/*----- Default Value for TCP_WND_UPDATE_THRESHOLD: 536 ---*/
-#define TCP_WND_UPDATE_THRESHOLD 1000
 /*----- Value in opt.h for LWIP_NETCONN: 1 -----*/
 #define LWIP_NETCONN 0
 /*----- Value in opt.h for LWIP_SOCKET: 1 -----*/
@@ -121,10 +113,12 @@
 #define LWIP_HTTPD_SSI 1
 /*----- Default Value for LWIP_HTTPD_SUPPORT_POST: 0 ---*/
 #define LWIP_HTTPD_SUPPORT_POST 1
+/*----- Default Value for LWIP_HTTPD_SUPPORT_V09: 1 ---*/
+#define LWIP_HTTPD_SUPPORT_V09 0
 /*----- Default Value for LWIP_HTTPD_SUPPORT_11_KEEPALIVE: 0 ---*/
 #define LWIP_HTTPD_SUPPORT_11_KEEPALIVE 1
-/*----- Default Value for LWIP_HTTPD_REQ_BUFSIZE: 1023 ---*/
-#define LWIP_HTTPD_REQ_BUFSIZE 2000
+/*----- Default Value for LWIP_HTTPD_SUPPORT_REQUESTLIST: 1 ---*/
+#define LWIP_HTTPD_SUPPORT_REQUESTLIST 0
 /*----- Value in opt.h for LWIP_STATS: 1 -----*/
 #define LWIP_STATS 0
 /*----- Value in opt.h for CHECKSUM_GEN_IP: 1 -----*/
@@ -150,9 +144,11 @@
 /*-----------------------------------------------------------------------------*/
 /* USER CODE BEGIN 1 */
 
-#define LWIP_DEBUG 1
+#define LWIP_DEBUG 0
 //#define TCP_DEBUG  LWIP_DBG_ON
-#define HTTPD_DEBUG         LWIP_DBG_ON
+//#define HTTPD_DEBUG         LWIP_DBG_ON
+
+//#define LWIP_DBG_TYPES_ON               LWIP_DBG_ON
 
 
 /** Set this to 1 to support CGI */

@@ -55,6 +55,7 @@
 #include "lwip/apps/httpd.h"
 #include "http_server.h"
 
+#include "flash_if.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -76,9 +77,8 @@ static void MX_GPIO_Init(void);
 /* USER CODE BEGIN 0 */
 int index1, numparam;
 char mass1[20], mass2[20];
+uint8_t data1[100];
 
-
-#define LWIP_DEBUG 1
 
 int fputc(int c, FILE *stream)
 {
@@ -119,7 +119,29 @@ int main(void)
   MX_LWIP_Init();
   /* USER CODE BEGIN 2 */
 	http_server_init();
+	
+	
+	memset(data1,0x1a,100);
+	int addr = USER_FLASH_FIRST_PAGE_ADDRESS;
+	FLASH_If_Init();
+							//FLASH_If_Erase(5);
+	//FLASH_If_Write(USER_FLASH_FIRST_PAGE_ADDRESS, (uint32_t *)data1 ,100);
+	//HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, USER_FLASH_FIRST_PAGE_ADDRESS, *(uint32_t*)data1);
 
+
+	for (int i = 0; (i < 100); i++)
+  {
+    /* Device voltage range supposed to be [2.7V to 3.6V], the operation will
+       be done by word */ 
+    if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, addr, *(uint32_t*)(data1 + i)) == HAL_OK)
+    {
+			
+      addr += 4;
+    }
+
+  }
+	
+	
   /* USER CODE END 2 */
 
   /* Infinite loop */

@@ -336,7 +336,7 @@
               <MiscControls></MiscControls>
               <Define>USE_HAL_DRIVER,STM32F746xx</Define>
               <Undefine></Undefine>
-              <IncludePath>../Inc;    ../Middlewares/Third_Party/LwIP/src/include;    ../Middlewares/Third_Party/LwIP/system;    ../Drivers/STM32F7xx_HAL_Driver/Inc;    ../Drivers/STM32F7xx_HAL_Driver/Inc/Legacy;    ../Middlewares/Third_Party/LwIP/src/include/netif/ppp;    ../Drivers/CMSIS/Device/ST/STM32F7xx/Include;    ../Middlewares/Third_Party/LwIP/src/include/lwip;    ../Middlewares/Third_Party/LwIP/src/include/lwip/apps;    ../Middlewares/Third_Party/LwIP/src/include/lwip/priv;    ../Middlewares/Third_Party/LwIP/src/include/lwip/prot;    ../Middlewares/Third_Party/LwIP/src/include/netif;    ../Middlewares/Third_Party/LwIP/src/include/posix;    ../Middlewares/Third_Party/LwIP/src/include/posix/sys;    ../Middlewares/Third_Party/LwIP/system/arch;    ../Drivers/CMSIS/Include;    ..\fs;   ../Middlewares/Third_Party/LwIP/src/apps/httpd</IncludePath>
+              <IncludePath>../Inc;../Middlewares/Third_Party/LwIP/src/include;../Middlewares/Third_Party/LwIP/system;../Drivers/STM32F7xx_HAL_Driver/Inc;../Drivers/STM32F7xx_HAL_Driver/Inc/Legacy;../Middlewares/Third_Party/LwIP/src/include/netif/ppp;../Drivers/CMSIS/Device/ST/STM32F7xx/Include;../Middlewares/Third_Party/LwIP/src/include/lwip;../Middlewares/Third_Party/LwIP/src/include/lwip/apps;../Middlewares/Third_Party/LwIP/src/include/lwip/priv;../Middlewares/Third_Party/LwIP/src/include/lwip/prot;../Middlewares/Third_Party/LwIP/src/include/netif;../Middlewares/Third_Party/LwIP/src/include/posix;../Middlewares/Third_Party/LwIP/src/include/posix/sys;../Middlewares/Third_Party/LwIP/system/arch;../Drivers/CMSIS/Include;..\fs;../Middlewares/Third_Party/LwIP/src/apps/httpd;..\Src</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -871,14 +871,19 @@
               <FilePath>../Src/lwip.c</FilePath>
             </File>
             <File>
-              <FileName>test.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\Inc\test.h</FilePath>
-            </File>
-            <File>
               <FileName>http_server.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\fs\http_server.c</FilePath>
+            </File>
+            <File>
+              <FileName>flash_if.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\flash_if.c</FilePath>
+            </File>
+            <File>
+              <FileName>flash_if.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Src\flash_if.h</FilePath>
             </File>
           </Files>
         </Group>
