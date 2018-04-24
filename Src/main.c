@@ -77,7 +77,7 @@ static void MX_GPIO_Init(void);
 /* USER CODE BEGIN 0 */
 int index1, numparam;
 char mass1[20], mass2[20];
-uint8_t data1[100];
+uint32_t data1[100];
 
 
 int fputc(int c, FILE *stream)
@@ -121,25 +121,13 @@ int main(void)
 	http_server_init();
 	
 	
-	memset(data1,0x1a,100);
-	int addr = USER_FLASH_FIRST_PAGE_ADDRESS;
-	FLASH_If_Init();
-							//FLASH_If_Erase(5);
-	//FLASH_If_Write(USER_FLASH_FIRST_PAGE_ADDRESS, (uint32_t *)data1 ,100);
-	//HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, USER_FLASH_FIRST_PAGE_ADDRESS, *(uint32_t*)data1);
+//	memset(data1,0xab,sizeof(data1));
+//	int addr = FLASH_USER_START_ADDR;
+//	FLASH_If_Init();
+//	
+//	FLASH_If_Erase(FLASH_USER_START_ADDR, FLASH_USER_END_ADDR);
+//	FLASH_If_Write(FLASH_USER_START_ADDR, (uint32_t *)data1 ,100);
 
-
-	for (int i = 0; (i < 100); i++)
-  {
-    /* Device voltage range supposed to be [2.7V to 3.6V], the operation will
-       be done by word */ 
-    if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, addr, *(uint32_t*)(data1 + i)) == HAL_OK)
-    {
-			
-      addr += 4;
-    }
-
-  }
 	
 	
   /* USER CODE END 2 */

@@ -60,6 +60,10 @@
   * @param  None
   * @retval None
   */
+
+
+static uint32_t GetSector(uint32_t Address);
+		
 void FLASH_If_Init(void)
 { 
    HAL_FLASH_Unlock(); 
@@ -71,34 +75,25 @@ void FLASH_If_Init(void)
   * @retval 0: user flash area successfully erased
   *         1: error occured 
   */
-int8_t FLASH_If_Erase(uint32_t StartSector)
+void FLASH_If_Erase(uint32_t start_addr, uint32_t end_addr)
 {
-  uint32_t FlashAddress;
- 
-  FlashAddress = StartSector;
-
-  /* Device voltage range supposed to be [2.7V to 3.6V], the operation will
-     be done by word */ 
- 
-  if (FlashAddress <= (uint32_t) USER_FLASH_LAST_PAGE_ADDRESS)
-  {
-    FLASH_EraseInitTypeDef FLASH_EraseInitStruct;
-    uint32_t sectornb = 0;
+	  FLASH_EraseInitTypeDef EraseInitStruct;
+		uint32_t FirstSector = 0, NbOfSectors = 0;
+	uint32_t SECTORError = 0;
     
-    FLASH_EraseInitStruct.TypeErase = FLASH_TYPEERASE_SECTORS;
-    FLASH_EraseInitStruct.Sector = FLASH_SECTOR_5; 
-    FLASH_EraseInitStruct.NbSectors = 1; ;
-    FLASH_EraseInitStruct.VoltageRange = FLASH_VOLTAGE_RANGE_3;
+  FirstSector = GetSector(start_addr);
+  /* Get the number of sector to erase from 1st sector*/
+  NbOfSectors = GetSector(end_addr) - FirstSector + 1;
+  /* Fill EraseInit structure*/
+  EraseInitStruct.TypeErase     = FLASH_TYPEERASE_SECTORS;
+  EraseInitStruct.VoltageRange  = FLASH_VOLTAGE_RANGE_3;
+  EraseInitStruct.Sector        = FirstSector;
+  EraseInitStruct.NbSectors     = NbOfSectors;
     
-    if (HAL_FLASHEx_Erase(&FLASH_EraseInitStruct, &sectornb) != HAL_OK)
-      return (1);
-  }
-  else
-  {
-    return (1);
-  }
-
-  return (0);
+    if (HAL_FLASHEx_Erase(&EraseInitStruct, &SECTORError) != HAL_OK)
+		{
+			while(1);
+		}
 }
 /**
   * @brief  This function writes a data buffer in flash (data are 32-bit aligned).
@@ -110,7 +105,7 @@ int8_t FLASH_If_Erase(uint32_t StartSector)
   *         1: Error occurred while writing data in Flash memory
   *         2: Written Data in flash memory is different from expected one
   */
-uint32_t FLASH_If_Write(__IO uint32_t FlashAddress, uint32_t* Data ,uint16_t DataLength)
+uint32_t FLASH_If_Write(__IO uint32_t FlashAddress, uint8_t* Data ,uint16_t DataLength)
 {
   uint32_t i = 0;
 
@@ -119,16 +114,16 @@ uint32_t FLASH_If_Write(__IO uint32_t FlashAddress, uint32_t* Data ,uint16_t Dat
   {
     /* Device voltage range supposed to be [2.7V to 3.6V], the operation will
        be done by word */ 
-    if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, FlashAddress, *(Data+i)) == HAL_OK)
+    if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_BYTE, FlashAddress, *(Data+i)) == HAL_OK)
     {
      /* Check the written value */
-      if (*(uint32_t*)FlashAddress != *(Data+i))
+      if (*(uint8_t*)FlashAddress != *(Data+i))
       {
         /* Flash content doesn't match SRAM content */
         return(2);
       }
       /* Increment FLASH destination address */
-      FlashAddress += 4;
+      FlashAddress++;
     }
     else
     {
@@ -139,5 +134,47 @@ uint32_t FLASH_If_Write(__IO uint32_t FlashAddress, uint32_t* Data ,uint16_t Dat
 
   return (0);
 }
+
+
+static uint32_t GetSector(uint32_t Address)
+{
+  uint32_t sector = 0;
+
+  if((Address < ADDR_FLASH_SECTOR_1) && (Address >= ADDR_FLASH_SECTOR_0))
+  {
+    sector = FLASH_SECTOR_0;
+  }
+  else if((Address < ADDR_FLASH_SECTOR_2) && (Address >= ADDR_FLASH_SECTOR_1))
+  {
+    sector = FLASH_SECTOR_1;
+  }
+  else if((Address < ADDR_FLASH_SECTOR_3) && (Address >= ADDR_FLASH_SECTOR_2))
+  {
+    sector = FLASH_SECTOR_2;
+  }
+  else if((Address < ADDR_FLASH_SECTOR_4) && (Address >= ADDR_FLASH_SECTOR_3))
+  {
+    sector = FLASH_SECTOR_3;
+  }
+  else if((Address < ADDR_FLASH_SECTOR_5) && (Address >= ADDR_FLASH_SECTOR_4))
+  {
+    sector = FLASH_SECTOR_4;
+  }
+  else if((Address < ADDR_FLASH_SECTOR_6) && (Address >= ADDR_FLASH_SECTOR_5))
+  {
+    sector = FLASH_SECTOR_5;
+  }
+  else if((Address < ADDR_FLASH_SECTOR_7) && (Address >= ADDR_FLASH_SECTOR_6))
+  {
+    sector = FLASH_SECTOR_6;
+  }
+  else /* (Address < FLASH_END_ADDR) && (Address >= ADDR_FLASH_SECTOR_7) */
+  {
+    sector = FLASH_SECTOR_7;
+  }
+  return sector;
+}
+
+
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

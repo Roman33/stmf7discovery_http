@@ -67,7 +67,7 @@ char uri1[20];
 char http_req[20];
 int http_len;
 int size;
-uint8_t data[200];
+uint8_t data[2000]; //pbuf size
 int j =0;
 
 
@@ -76,6 +76,7 @@ int j =0;
 	int TotalReceived=0;
 	int TotalData=0;
 	int packet_num = 0;
+	int offset = 0;
 	
 
 
@@ -218,6 +219,11 @@ err_t httpd_post_begin(void *connection, const char *uri, const char *http_reque
 
 		printf( "content_len: %d\n", size);
 	
+	//if bin + 250 > len then err 
+	
+
+	
+	
 	
 
 	
@@ -268,28 +274,52 @@ err_t httpd_post_receive_data(void *connection, struct pbuf *p)
 
 						TotalData += EndOffset - DataOffset;
 						printf( "TotalData: %d\n", TotalData);
-							
-							FLASH_If_Init();
-							//FLASH_If_Erase(5);
-							pbuf_copy_partial(p, data, TotalData, DataOffset);
-							//FLASH_If_Write((uint32_t *)USER_FLASH_FIRST_PAGE_ADDRESS, (uint32_t *)data ,TotalData);
 						break;
 						}
 						}
 						
-						//more then one pack
-						if (EndOffset == 0)
+						//first pack with no end
+						if (EndOffset == 0  && DataOffset != 0)
 						{
 							packet_num = 1;
 							TotalData+= p->tot_len - DataOffset;
 							
+							FLASH_If_Init();
+							FLASH_If_Erase(FLASH_USER_START_ADDR, FLASH_USER_END_ADDR);
+
+								while (offset != p->tot_len - DataOffset)
+							{
+								pbuf_copy_partial(p, data, 1 ,offset + DataOffset);
+								FLASH_If_Write(FLASH_USER_START_ADDR + offset, data ,1);
+								offset++;
+							}
+
+							
 						}
-						else //end
+						//no bin file
+						else if ( DataOffset == 0)
 						{
+							//not bin file
+						}
+						
+						//end was found, all data in 1 pack
+						else if (EndOffset != 0  && DataOffset != 0)
+						{
+						
+							FLASH_If_Init();
+							FLASH_If_Erase(FLASH_USER_START_ADDR, FLASH_USER_END_ADDR);
+
+								while (offset != EndOffset - DataOffset)
+							{
+								pbuf_copy_partial(p, data, 1 ,offset + DataOffset);
+								FLASH_If_Write(FLASH_USER_START_ADDR + offset, data ,1);
+								offset++;
+							}
 						packet_num = 0;
 						EndOffset=0;
 						DataOffset=0;
 						TotalData=0;
+						offset = 0;
 						}
 	}
 	
@@ -297,9 +327,6 @@ err_t httpd_post_receive_data(void *connection, struct pbuf *p)
 				// много пакетов
 					else if ( packet_num == 1)
 					{
-						
-					TotalData+= p->tot_len;
-
 							for (int i=4; i < p->tot_len; i++)
 					{
 					if (strncmp ((char*)(p->payload) + p->tot_len -i,http_crnl_2 , 4)==0)
@@ -307,17 +334,39 @@ err_t httpd_post_receive_data(void *connection, struct pbuf *p)
 					EndOffset = p->tot_len - i;
 					printf( "EndOffset: %d\n", EndOffset);
 
-					TotalData = TotalData - p->tot_len + EndOffset;
-					printf( "TotalData: %d\n", TotalData);
-						
+
+								while (offset != TotalData + EndOffset)
+							{
+								pbuf_copy_partial(p, data, 1 ,offset - TotalData);
+								FLASH_If_Write(FLASH_USER_START_ADDR + offset, data ,1);
+								offset++;
+							}
+
+					TotalData = offset;
+					printf( "TotalData: %d\n", TotalData);							
+
+		
 					packet_num = 0;
 					EndOffset=0;
 					DataOffset=0;
 					TotalData=0;
+					offset=0;
 					break;
 					}
+				}
+					
+					//just copy full pack
+					if (EndOffset == 0  && DataOffset != 0)
+					{
+								while (offset != TotalData + p->tot_len)
+							{
+								pbuf_copy_partial(p, data, 1 ,offset - TotalData);
+								FLASH_If_Write(FLASH_USER_START_ADDR + offset, data ,1);
+								offset++;
+							}
+							TotalData+= p->tot_len;
 					}
-					}
+			}
 					
 					
 	pbuf_free(p);
