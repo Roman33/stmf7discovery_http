@@ -62,6 +62,8 @@ uint32_t ADC_not_configured=1;
 extern int index1, numparam;
 extern char mass1[20], mass2[20];
 
+uint32_t temp [5];
+
 
 char uri1[20];
 char http_req[20];
@@ -78,7 +80,14 @@ int j =0;
 	int packet_num = 0;
 	int offset = 0;
 	
+enum
+{
+	Not_bin_file,
+	Size_too_big,
+	Success
+} POST_status;
 
+int post_size = 0;
 
 static const char http_crnl_2[4] =
 /* "\r\n--" */
@@ -94,6 +103,8 @@ static const char octet_stream[14] =
 char const* TAGCHAR="t";
 char const** TAGS=&TAGCHAR;
 
+char const* POST_tag="r";
+char const** TAGS2=&POST_tag;
 /* CGI handler for LED control */ 
 const char * LEDS_CGI_Handler(int iIndex, int iNumParams, char *pcParam[], char *pcValue[]);
 u16_t ADC_Handler(int iIndex, char *pcInsert, int iInsertLen);
@@ -144,6 +155,34 @@ u16_t ADC_Handler(int iIndex, char *pcInsert, int iInsertLen)
   return 0;
 }
 
+
+u16_t Post_result(int iIndex, char *pcInsert, int iInsertLen)
+{
+	  if (iIndex ==0)
+  {  
+		if ( POST_status == Not_bin_file)
+		{
+			sprintf( pcInsert, "NOT BIN FILE");
+			return strlen(pcInsert);
+		}
+		else if ( POST_status == Success)
+		{
+			sprintf( pcInsert, "Successfully downloaded %d bytes", post_size);
+			post_size = 0;
+			return strlen(pcInsert);
+		}
+		
+
+		
+		char data[]=	"status";
+		sprintf( pcInsert, data);
+		
+    return strlen(pcInsert);
+  }
+  return 0;
+	
+}
+
 /**
   * @brief  CGI handler for LEDs control 
   */
@@ -161,10 +200,10 @@ const char * LEDS_CGI_Handler(int iIndex, int iNumParams, char *pcParam[], char 
 	{
 
 			if (strcmp(pcParam[i] , "Var1")==0)
-			{mass1[0] = atoi(pcValue[i]); }
+			{temp[0] = atoi(pcValue[i]); }
 
 			if (strcmp(pcParam[i] , "Var2")==0)  
-			{mass1[1] = atoi(pcValue[i]); }
+			{temp[1] = atoi(pcValue[i]); }
 			
 			      if (strcmp(pcParam[i] , "led")==0)
 						{
@@ -300,6 +339,15 @@ err_t httpd_post_receive_data(void *connection, struct pbuf *p)
 						else if ( DataOffset == 0)
 						{
 							//not bin file
+						packet_num = 0;
+						EndOffset=0;
+						DataOffset=0;
+						TotalData=0;
+						offset = 0;
+							
+							POST_status = Not_bin_file;
+							return 1;
+							
 						}
 						
 						//end was found, all data in 1 pack
@@ -315,6 +363,9 @@ err_t httpd_post_receive_data(void *connection, struct pbuf *p)
 								FLASH_If_Write(FLASH_USER_START_ADDR + offset, data ,1);
 								offset++;
 							}
+							
+							POST_status = Success;
+							post_size = TotalData;
 						packet_num = 0;
 						EndOffset=0;
 						DataOffset=0;
@@ -344,8 +395,10 @@ err_t httpd_post_receive_data(void *connection, struct pbuf *p)
 
 					TotalData = offset;
 					printf( "TotalData: %d\n", TotalData);							
-
-		
+							
+							
+							POST_status = Success;
+							post_size = TotalData;
 					packet_num = 0;
 					EndOffset=0;
 					DataOffset=0;
@@ -410,6 +463,7 @@ void http_server_init(void)
   
   /* configure SSI handlers (ADC page SSI) */
   http_set_ssi_handler(ADC_Handler, (char const **)TAGS, 1);
+	http_set_ssi_handler(Post_result, (char const **)TAGS2, 1);
   
   /* configure CGI handlers (LEDs control CGI) */
   CGI_TAB[0] = LEDS_CGI;
