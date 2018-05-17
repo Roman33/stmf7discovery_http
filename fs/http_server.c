@@ -69,22 +69,31 @@ char uri1[20];
 char http_req[20];
 int http_len;
 int size;
-uint8_t data[2000]; //pbuf size
-int j =0;
 
 
-	int EndOffset=0;
-	int DataOffset=0;
-	int TotalReceived=0;
-	int TotalData=0;
-	int packet_num = 0;
-	int offset = 0;
+
+	typedef struct
+			{
+		uint32_t EndOffset;
+		uint32_t DataOffset;
+		uint32_t TotalContent;
+		uint32_t FirstPacketFlag;
+		uint32_t TotalData;
+		uint32_t WriteOffset;
+		uint8_t buffer;
+	}BldrPostTypeDef;
+		
+	BldrPostTypeDef Bldr_post = {0};
+	
+	uint32_t firmware_size =0;
+	
+
 	
 enum
 {
 	Not_bin_file,
 	Size_too_big,
-	Success
+	Success,
 } POST_status;
 
 int post_size = 0;
@@ -133,10 +142,7 @@ u16_t ADC_Handler(int iIndex, char *pcInsert, int iInsertLen)
   if (iIndex ==0)
   {  
      /* get digits to display */
-		char mass[]=	"test data: %d\n"
-							"Test2 data: %X\n"
-							"Test3 data: %x\n";
-		
+
 //		char c = i +0x30;
 
 //     /* prepare data to be inserted in html */
@@ -167,8 +173,8 @@ u16_t Post_result(int iIndex, char *pcInsert, int iInsertLen)
 		}
 		else if ( POST_status == Success)
 		{
-			sprintf( pcInsert, "Successfully downloaded %d bytes", post_size);
-			post_size = 0;
+			sprintf( pcInsert, "Successfully downloaded %d bytes", firmware_size);
+			firmware_size = 0;
 			return strlen(pcInsert);
 		}
 		
@@ -249,22 +255,8 @@ err_t httpd_post_begin(void *connection, const char *uri, const char *http_reque
                        u16_t response_uri_len, u8_t *post_auto_wnd)
 
 {
-	memcpy(&uri1, uri,20);
-	memcpy(&http_req, http_request,20);
-	http_len = http_request_len;
-	size = content_len;
-	
-	
-
-		printf( "content_len: %d\n", size);
-	
-	//if bin + 250 > len then err 
-	
-
-	
-	
-	
-
+	Bldr_post.TotalContent = content_len;
+	//if too big then ssi it
 	
 	return ERR_OK;
 }
@@ -280,152 +272,132 @@ err_t httpd_post_begin(void *connection, const char *uri, const char *http_reque
 err_t httpd_post_receive_data(void *connection, struct pbuf *p)
 {
 	
-
-//	printf( "tot_len: %d\n", p->tot_len);
-//	printf( "len: %d\n", p->len);
-	//pbuf_copy_partial(p, data, 300, 0);
-	j++;
-	//uint8_t temp[1000];
-	
-		
 	
 	//parse for DataOffset and EndOffset if packet_num = 0
-	if ( packet_num == 0)
+	if ( Bldr_post.FirstPacketFlag == 0)
 	{
-			          /* parse packet for the octet-stream field */
-          for (int i=0;i < p->tot_len;i++)
-          {
-             if (strncmp ((char*)(p->payload) +i, octet_stream, 13)==0)
-             {
-               DataOffset = i+16; //16 cause of /r/n
-							 printf( "DataOffset: %d\n", DataOffset);
-               break;
-             }
-          }
-					
-					//parse for end
-						for (int i=4; i < p->tot_len; i++)
-						{
-						if (strncmp ((char*)(p->payload) + p->tot_len -i,http_crnl_2 , 4)==0)
-						{
-						EndOffset = p->len - i;
-						printf( "EndOffset: %d\n", EndOffset);
-
-						TotalData += EndOffset - DataOffset;
-						printf( "TotalData: %d\n", TotalData);
-						break;
-						}
-						}
-						
-						//first pack with no end
-						if (EndOffset == 0  && DataOffset != 0)
-						{
-							packet_num = 1;
-							TotalData+= p->tot_len - DataOffset;
-							
-							FLASH_If_Init();
-							FLASH_If_Erase(FLASH_USER_START_ADDR, FLASH_USER_END_ADDR);
-
-								while (offset != p->tot_len - DataOffset)
-							{
-								pbuf_copy_partial(p, data, 1 ,offset + DataOffset);
-								FLASH_If_Write(FLASH_USER_START_ADDR + offset, data ,1);
-								offset++;
-							}
-
-							
-						}
-						//no bin file
-						else if ( DataOffset == 0)
-						{
-							//not bin file
-						packet_num = 0;
-						EndOffset=0;
-						DataOffset=0;
-						TotalData=0;
-						offset = 0;
-							
-							POST_status = Not_bin_file;
-							return 1;
-							
-						}
-						
-						//end was found, all data in 1 pack
-						else if (EndOffset != 0  && DataOffset != 0)
-						{
-						
-							FLASH_If_Init();
-							FLASH_If_Erase(FLASH_USER_START_ADDR, FLASH_USER_END_ADDR);
-
-								while (offset != EndOffset - DataOffset)
-							{
-								pbuf_copy_partial(p, data, 1 ,offset + DataOffset);
-								FLASH_If_Write(FLASH_USER_START_ADDR + offset, data ,1);
-								offset++;
-							}
-							
-							POST_status = Success;
-							post_size = TotalData;
-						packet_num = 0;
-						EndOffset=0;
-						DataOffset=0;
-						TotalData=0;
-						offset = 0;
-						}
+    /* parse packet for the octet-stream field */
+    for (int i=0; i < p->tot_len; i++)
+    {
+      if (strncmp ((char*)(p->payload) +i, octet_stream, 13)==0)
+      {
+        Bldr_post.DataOffset = i+16; //16 cause of /r/n
+        break;
+      }
+    }
+    
+    //parse for end (1 pack only)
+    for (int i=4; i < p->tot_len; i++)
+    {
+      if (strncmp ((char*)(p->payload) + p->tot_len -i,http_crnl_2 , 4)==0)
+      {
+        Bldr_post.EndOffset = p->len - i;
+        Bldr_post.TotalData += Bldr_post.EndOffset - Bldr_post.DataOffset;
+        break;
+      }
+    }
+    
+    //first pack with no end
+    if (Bldr_post.EndOffset == 0  && Bldr_post.DataOffset != 0)
+    {
+      Bldr_post.FirstPacketFlag = 1;
+      Bldr_post.TotalData = p->tot_len - Bldr_post.DataOffset;
+      
+      FLASH_If_Init();
+      FLASH_If_Erase(FLASH_USER_START_ADDR, FLASH_USER_END_ADDR);
+      
+      while (Bldr_post.WriteOffset != p->tot_len - Bldr_post.DataOffset)
+      {
+        pbuf_copy_partial(p, &Bldr_post.buffer, 1 ,Bldr_post.WriteOffset + Bldr_post.DataOffset);
+        FLASH_If_Write(FLASH_USER_START_ADDR + Bldr_post.WriteOffset, &Bldr_post.buffer ,1);
+        Bldr_post.WriteOffset++;
+      }
+      
+      
+    }
+    //octet stream not found, not bin file
+    else if ( Bldr_post.DataOffset == 0)
+    {
+      memset(&Bldr_post, 0, sizeof(Bldr_post));
+      POST_status = Not_bin_file;
+      
+      //return status page
+      pbuf_free(p);
+      return 1;
+      
+    }
+    
+    //end was found, all data in 1 pack
+    else if (Bldr_post.EndOffset != 0  && Bldr_post.DataOffset != 0)
+    {
+      
+      FLASH_If_Init();
+      FLASH_If_Erase(FLASH_USER_START_ADDR, FLASH_USER_END_ADDR);
+      
+      while (Bldr_post.WriteOffset != Bldr_post.EndOffset - Bldr_post.DataOffset)
+      {
+        pbuf_copy_partial(p, &Bldr_post.buffer, 1 ,Bldr_post.WriteOffset + Bldr_post.DataOffset);
+        FLASH_If_Write(FLASH_USER_START_ADDR + Bldr_post.WriteOffset, &Bldr_post.buffer ,1);
+        Bldr_post.WriteOffset++;
+      }
+      
+      POST_status = Success;
+      firmware_size = Bldr_post.TotalData;
+      memset(&Bldr_post, 0, sizeof(Bldr_post));
+      
+      pbuf_free(p);
+      return ERR_OK;
+    }
 	}
 	
-				
-				// много пакетов
-					else if ( packet_num == 1)
-					{
-							for (int i=4; i < p->tot_len; i++)
-					{
-					if (strncmp ((char*)(p->payload) + p->tot_len -i,http_crnl_2 , 4)==0)
-					{
-					EndOffset = p->tot_len - i;
-					printf( "EndOffset: %d\n", EndOffset);
-
-
-								while (offset != TotalData + EndOffset)
-							{
-								pbuf_copy_partial(p, data, 1 ,offset - TotalData);
-								FLASH_If_Write(FLASH_USER_START_ADDR + offset, data ,1);
-								offset++;
-							}
-
-					TotalData = offset;
-					printf( "TotalData: %d\n", TotalData);							
-							
-							
-							POST_status = Success;
-							post_size = TotalData;
-					packet_num = 0;
-					EndOffset=0;
-					DataOffset=0;
-					TotalData=0;
-					offset=0;
-					break;
-					}
-				}
-					
-					//just copy full pack
-					if (EndOffset == 0  && DataOffset != 0)
-					{
-								while (offset != TotalData + p->tot_len)
-							{
-								pbuf_copy_partial(p, data, 1 ,offset - TotalData);
-								FLASH_If_Write(FLASH_USER_START_ADDR + offset, data ,1);
-								offset++;
-							}
-							TotalData+= p->tot_len;
-					}
-			}
-					
-					
+  
+  // >1 packs
+  else if ( Bldr_post.FirstPacketFlag == 1)
+  {
+    
+    for (int i=4; i < p->tot_len; i++)
+    {
+      //looking for end
+      if (strncmp ((char*)(p->payload) + p->tot_len -i,http_crnl_2 , 4)==0)
+      {
+        Bldr_post.EndOffset = p->tot_len - i;
+        
+        while (Bldr_post.WriteOffset != Bldr_post.TotalData + Bldr_post.EndOffset)
+        {
+          pbuf_copy_partial(p, &Bldr_post.buffer, 1 ,Bldr_post.WriteOffset - Bldr_post.TotalData);
+          FLASH_If_Write(FLASH_USER_START_ADDR + Bldr_post.WriteOffset, &Bldr_post.buffer ,1);
+          Bldr_post.WriteOffset++;
+        }
+        
+        Bldr_post.TotalData = Bldr_post.WriteOffset;
+        
+        
+        POST_status = Success;
+        firmware_size = Bldr_post.TotalData;
+        memset(&Bldr_post, 0, sizeof(Bldr_post));
+        break;
+      }
+    }
+    
+    //just copy full pack
+    if (Bldr_post.EndOffset == 0  && Bldr_post.DataOffset != 0)
+    {
+      while (Bldr_post.WriteOffset != Bldr_post.TotalData + p->tot_len)
+      {
+        pbuf_copy_partial(p, &Bldr_post.buffer, 1 ,Bldr_post.WriteOffset - Bldr_post.TotalData);
+        FLASH_If_Write(FLASH_USER_START_ADDR + Bldr_post.WriteOffset, &Bldr_post.buffer ,1);
+        Bldr_post.WriteOffset++;
+      }
+      Bldr_post.TotalData += p->tot_len;
+    }
+  }
+  
+  
 	pbuf_free(p);
 	return ERR_OK;
 	
 }
+
 
 /** Called when all data is received or when the connection is closed.
  * The application must return the filename/URI of a file to send in response
@@ -441,8 +413,6 @@ void httpd_post_finished(void *connection, char *response_uri, u16_t response_ur
 	char mass[] ="/post_done.shtml";
 	
 	response_uri_len = sizeof(mass);
-	
-	    
         strncpy(response_uri, mass, response_uri_len);
 
 
